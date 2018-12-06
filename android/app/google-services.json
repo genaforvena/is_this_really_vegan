@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "948924025441",
+    "firebase_url": "https://is-this-really-vegan.firebaseio.com",
+    "project_id": "is-this-really-vegan",
+    "storage_bucket": "is-this-really-vegan.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:948924025441:android:4625f07b4ad7d375",
+        "android_client_info": {
+          "package_name": "com.imozerov.isthisreallyvegan"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "948924025441-igrm6rbe5kndjfqbih2kf3u7306feaqu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0MJscQKaD31R5stosGk8O7QQIz03urlA"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

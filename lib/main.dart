@@ -19,6 +19,7 @@ void logError(String code, String message) =>
 class _CameraHomeState extends State<CameraHome> {
   CameraController controller;
   String imagePath;
+  FirebaseVisionTextDetector detector = FirebaseVisionTextDetector.instance;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -124,8 +125,6 @@ class _CameraHomeState extends State<CameraHome> {
 
   void onCheckPressed() async {
     showInSnackBar("Checking ingredients");
-
-    FirebaseVisionTextDetector detector = FirebaseVisionTextDetector.instance;
     var ingredients = await detector.detectFromPath(imagePath);
     ingredients.forEach((e) => showInSnackBar("${e.text}"));
   }
