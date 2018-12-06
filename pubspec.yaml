@@ -23,6 +23,7 @@ dependencies:
   io: 0.3.3
   camera: 0.2.6
   path_provider: 0.4.1
+  mlkit: 0.9.0
 
 dev_dependencies:
   flutter_test:

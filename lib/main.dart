@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:mlkit/mlkit.dart';
 
 class CameraHome extends StatefulWidget {
   @override
@@ -100,9 +101,11 @@ class _CameraHomeState extends State<CameraHome> {
       controls.addAll(
           [
             IconButton(icon: const Icon(Icons.clear),
+                color: Colors.red,
                 onPressed: onRetakePicturePressed),
             IconButton(icon: const Icon(Icons.search),
-                onPressed: null)
+                color: Colors.green,
+                onPressed: onCheckPressed)
           ]
       );
     }
@@ -119,8 +122,12 @@ class _CameraHomeState extends State<CameraHome> {
     });
   }
 
-  void onCheckPressed() {
-    showInSnackBar("Check pressed");
+  void onCheckPressed() async {
+    showInSnackBar("Checking ingredients");
+
+    FirebaseVisionTextDetector detector = FirebaseVisionTextDetector.instance;
+    var ingredients = await detector.detectFromPath(imagePath);
+    ingredients.forEach((e) => showInSnackBar("${e.text}"));
   }
 
   String timestamp() =>
