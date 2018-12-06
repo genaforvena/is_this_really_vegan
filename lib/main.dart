@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:is_this_really_vegan/text_painter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:mlkit/mlkit.dart';
 
@@ -19,6 +20,7 @@ void logError(String code, String message) =>
 class _CameraHomeState extends State<CameraHome> {
   CameraController controller;
   String imagePath;
+  List<VisionText> labels = <VisionText>[];
   FirebaseVisionTextDetector detector = FirebaseVisionTextDetector.instance;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -41,9 +43,7 @@ class _CameraHomeState extends State<CameraHome> {
               child: Padding(
                 padding: const EdgeInsets.all(1.0),
                 child: Center(
-                  child: imagePath == null
-                      ? _cameraPreviewWidget()
-                      : _takenPicturePreview(),
+                  child: _cameraOrImageWidget(),
                 ),
               ),
               decoration: BoxDecoration(
@@ -61,6 +61,43 @@ class _CameraHomeState extends State<CameraHome> {
         ],
       ),
     );
+  }
+
+  Widget _cameraOrImageWidget() {
+    if (imagePath != null) {
+      if (labels != null) {
+        return _processedIndgredientsOnImage();
+      } else {
+        return _takenPicturePreview();
+      }
+    } else {
+      return _cameraPreviewWidget();
+    }
+  }
+
+  Widget _processedIndgredientsOnImage() {
+    final file = File(imagePath);
+    return FutureBuilder<Size>(
+      future: _getImageSize(Image.file(file, fit: BoxFit.fitWidth)),
+      builder: (BuildContext context, AsyncSnapshot<Size> snapshot) {
+        if (snapshot.hasData) {
+          return Container(
+              foregroundDecoration:
+              TextDetectDecoration(labels, snapshot.data),
+              child: Image.file(file, fit: BoxFit.fitWidth));
+        } else {
+          return Text('Detecting...');
+        }
+      },
+    );
+  }
+
+  Future<Size> _getImageSize(Image image) {
+    Completer<Size> completer = Completer<Size>();
+    image.image.resolve(ImageConfiguration()).addListener(
+            (ImageInfo info, bool _) => completer.complete(
+            Size(info.image.width.toDouble(), info.image.height.toDouble())));
+    return completer.future;
   }
 
   /// Display the preview from the camera (or a message if the preview is not available).
@@ -126,7 +163,9 @@ class _CameraHomeState extends State<CameraHome> {
   void onCheckPressed() async {
     showInSnackBar("Checking ingredients");
     var ingredients = await detector.detectFromPath(imagePath);
-    ingredients.forEach((e) => showInSnackBar("${e.text}"));
+    setState(() {
+      labels = ingredients;
+    });
   }
 
   String timestamp() =>
