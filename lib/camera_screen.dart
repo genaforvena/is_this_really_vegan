@@ -38,9 +38,6 @@ class _CameraScreenState extends State<CameraScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      appBar: AppBar(
-        title: const Text('Is this really vegan?'),
-      ),
       body: _bodyWidget(),
     );
   }
