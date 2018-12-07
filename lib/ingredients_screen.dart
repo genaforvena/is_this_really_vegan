@@ -48,6 +48,6 @@ class IngredientsScreen extends StatelessWidget {
           title: Text('${foundNonVegan[index]}'),
         );
       },
-    )
+    );
   }
 }

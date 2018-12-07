@@ -850,4 +850,4 @@ const nonVeganIngredients = [
   "yogurt",
   "zinc caseinate",
   "zinc hydrolyzed animal protein"
-]
+];
