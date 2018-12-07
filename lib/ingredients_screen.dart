@@ -9,11 +9,15 @@ class IngredientsScreen extends StatelessWidget {
   IngredientsScreen(this.recognizedLabels) {
     final rawIngredients = recognizedLabels
         .map((visionText) => visionText.text)
-        .join("")
-        .replaceAll('/[.,:;-]/', " ")
+        .join(" ")
+        .replaceAll(RegExp(r"[^\s\w]"), " ")
+        .replaceAll("\n", " ")
         .toLowerCase();
-    foundNonVegan = nonVeganIngredients.where((ingredient) =>
-        rawIngredients.contains(" $ingredient ")).toList();
+    final withSpacesRaw = " $rawIngredients ";
+    print(withSpacesRaw);
+    foundNonVegan = nonVeganIngredients
+        .where((ingredient) => withSpacesRaw.contains(" $ingredient "))
+        .toList();
   }
 
   @override
@@ -29,23 +33,30 @@ class IngredientsScreen extends StatelessWidget {
   Widget _buildBody() {
     if (recognizedLabels.length == 0) {
       return Center(
-        child: const Text(
-            "Unable to recognize ingredients. Please try again!"),
+        child: const Text("Unable to recognize ingredients. Please try again!"),
       );
     }
 
     if (foundNonVegan.length == 0) {
       return Center(
-        child: const Text(
-            "This seems to be really vegan!"),
-      );
+          child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          const Icon(Icons.check, size: 40, color: Colors.green),
+          const Text("This seems to be really vegan!",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        ],
+      ));
     }
 
     return ListView.builder(
       itemCount: foundNonVegan.length,
       itemBuilder: (context, index) {
         return ListTile(
-          title: Text('${foundNonVegan[index]}'),
+          leading: Icon(Icons.clear, color: Colors.red),
+          title:
+              Text('${foundNonVegan[index]}', style: TextStyle(fontSize: 18)),
         );
       },
     );
