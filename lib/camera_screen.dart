@@ -23,6 +23,7 @@ void logError(String code, String message) =>
 
 class _CameraScreenState extends State<CameraScreen> {
   final List<CameraDescription> cameras;
+  bool isProcessing = false;
   CameraController controller;
   String imagePath;
   FirebaseVisionTextDetector detector = FirebaseVisionTextDetector.instance;
@@ -40,30 +41,57 @@ class _CameraScreenState extends State<CameraScreen> {
       appBar: AppBar(
         title: const Text('Is this really vegan?'),
       ),
-      body: Column(
-        children: <Widget>[
-          Expanded(
-            child: Container(
-              child: Padding(
-                padding: const EdgeInsets.all(1.0),
-                child: Center(
-                  child: _cameraOrImageWidget(),
+      body: _bodyWidget(),
+    );
+  }
+
+  Widget _bodyWidget() {
+    var content = <Widget>[
+      Column(
+          children: <Widget>[
+            Expanded(
+              child: Container(
+                child: Padding(
+                  padding: const EdgeInsets.all(1.0),
+                  child: Center(
+                    child: _cameraOrImageWidget(),
+                  ),
                 ),
-              ),
-              decoration: BoxDecoration(
-                color: Colors.black,
-                border: Border.all(
-                  color: controller != null && controller.value.isRecordingVideo
-                      ? Colors.redAccent
-                      : Colors.grey,
-                  width: 3.0,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  border: Border.all(
+                    color: controller != null &&
+                        controller.value.isRecordingVideo
+                        ? Colors.redAccent
+                        : Colors.grey,
+                    width: 3.0,
+                  ),
                 ),
               ),
             ),
-          ),
-          _captureControlRowWidget()
-        ],
-      ),
+            _captureControlRowWidget()
+          ]
+      )
+    ];
+
+    if (isProcessing) {
+      content.add(_loadingIndicatorWidget());
+    }
+
+    return Stack(children: content);
+  }
+
+  Widget _loadingIndicatorWidget() {
+    return Stack(
+      children: [
+        Opacity(
+          opacity: 0.3,
+          child: const ModalBarrier(dismissible: false, color: Colors.grey),
+        ),
+        Center(
+          child: CircularProgressIndicator(),
+        ),
+      ],
     );
   }
 
@@ -105,8 +133,7 @@ class _CameraScreenState extends State<CameraScreen> {
         icon: const Icon(Icons.camera_alt),
         color: Colors.blue,
         onPressed: controller != null &&
-                controller.value.isInitialized &&
-                !controller.value.isRecordingVideo
+            controller.value.isInitialized
             ? onTakePictureButtonPressed
             : null,
       ));
@@ -136,12 +163,28 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   void onCheckPressed() async {
-    var ingredients = await detector.detectFromPath(imagePath);
-    Navigator.of(context).push(MaterialPageRoute(
-        builder: (context) => IngredientsScreen(ingredients)));
+    setState(() {
+      isProcessing = true;
+    });
+
+    try {
+      var labels = await detector.detectFromPath(imagePath);
+      Navigator.of(context).push(MaterialPageRoute(
+          builder: (context) => IngredientsScreen(labels)));
+    } catch (e) {
+      print('Error: Error Message: $e');
+      showInSnackBar("Failed to detect text!");
+    }
+    setState(() {
+      isProcessing = false;
+    });
   }
 
-  String timestamp() => DateTime.now().millisecondsSinceEpoch.toString();
+  String timestamp() =>
+      DateTime
+          .now()
+          .millisecondsSinceEpoch
+          .toString();
 
   void showInSnackBar(String message) {
     _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text(message)));
@@ -149,7 +192,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
   void _selectCamera() async {
     final cameraDescription =
-        cameras.firstWhere((c) => c.lensDirection == CameraLensDirection.back);
+    cameras.firstWhere((c) => c.lensDirection == CameraLensDirection.back);
 
     if (cameraDescription == null) {
       showInSnackBar('No back camera detected!');
