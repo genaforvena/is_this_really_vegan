@@ -6,7 +6,6 @@ const nonVeganIngredients = [
   "acetylated lanolin alcohol",
   "acetylated lanolin ricinoleate",
   "acetylated tallow",
-  "acid",
   "acidophilus milk",
   "adrenaline",
   "adrenals of cattle",

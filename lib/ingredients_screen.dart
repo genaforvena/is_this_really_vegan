@@ -9,9 +9,11 @@ class IngredientsScreen extends StatelessWidget {
   IngredientsScreen(this.recognizedLabels) {
     final rawIngredients = recognizedLabels
         .map((visionText) => visionText.text)
-        .join("").toLowerCase();
+        .join("")
+        .replaceAll('/[.,:;-]/', " ")
+        .toLowerCase();
     foundNonVegan = nonVeganIngredients.where((ingredient) =>
-        rawIngredients.contains(ingredient)).toList();
+        rawIngredients.contains(" $ingredient ")).toList();
   }
 
   @override
