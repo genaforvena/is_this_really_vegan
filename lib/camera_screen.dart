@@ -44,31 +44,10 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Widget _bodyWidget() {
     var content = <Widget>[
-      Column(
-          children: <Widget>[
-            Expanded(
-              child: Container(
-                child: Padding(
-                  padding: const EdgeInsets.all(1.0),
-                  child: Center(
-                    child: _cameraOrImageWidget(),
-                  ),
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  border: Border.all(
-                    color: controller != null &&
-                        controller.value.isRecordingVideo
-                        ? Colors.redAccent
-                        : Colors.grey,
-                    width: 3.0,
-                  ),
-                ),
-              ),
-            ),
-            _captureControlRowWidget()
-          ]
-      )
+      Column(children: <Widget>[
+        Expanded(child: _cameraOrImageWidget()),
+        _captureControlRowWidget()
+      ])
     ];
 
     if (isProcessing) {
@@ -120,7 +99,7 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Widget _takenPicturePreview() {
-    return Image.file(File(imagePath));
+    return Image.file(File(imagePath), fit: BoxFit.fill);
   }
 
   Widget _captureControlRowWidget() {
@@ -129,8 +108,7 @@ class _CameraScreenState extends State<CameraScreen> {
       controls.add(IconButton(
         icon: const Icon(Icons.camera_alt),
         color: Colors.blue,
-        onPressed: controller != null &&
-            controller.value.isInitialized
+        onPressed: controller != null && controller.value.isInitialized
             ? onTakePictureButtonPressed
             : null,
       ));
@@ -166,8 +144,8 @@ class _CameraScreenState extends State<CameraScreen> {
 
     try {
       var labels = await detector.detectFromPath(imagePath);
-      Navigator.of(context).push(MaterialPageRoute(
-          builder: (context) => IngredientsScreen(labels)));
+      Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => IngredientsScreen(labels)));
     } catch (e) {
       print('Error: Error Message: $e');
       showInSnackBar("Failed to detect text!");
@@ -177,11 +155,7 @@ class _CameraScreenState extends State<CameraScreen> {
     });
   }
 
-  String timestamp() =>
-      DateTime
-          .now()
-          .millisecondsSinceEpoch
-          .toString();
+  String timestamp() => DateTime.now().millisecondsSinceEpoch.toString();
 
   void showInSnackBar(String message) {
     _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text(message)));
@@ -189,7 +163,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
   void _selectCamera() async {
     final cameraDescription =
-    cameras.firstWhere((c) => c.lensDirection == CameraLensDirection.back);
+        cameras.firstWhere((c) => c.lensDirection == CameraLensDirection.back);
 
     if (cameraDescription == null) {
       showInSnackBar('No back camera detected!');
