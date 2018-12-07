@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:is_this_really_vegan/data/non_vegan.dart';
 import 'package:mlkit/mlkit.dart';
 
 class IngredientsScreen extends StatelessWidget {
@@ -6,18 +7,18 @@ class IngredientsScreen extends StatelessWidget {
   List<String> foundNonVegan;
 
   IngredientsScreen(this.recognizedLabels) {
-    final text = recognizedLabels
+    final rawIngredients = recognizedLabels
         .map((visionText) => visionText.text)
-        .join("");
-    // TODO
-    foundNonVegan = [];
+        .join("").toLowerCase();
+    foundNonVegan = nonVeganIngredients.where((ingredient) =>
+        rawIngredients.contains(ingredient)).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Recognized ingredients'),
+        title: const Text('Non vegan ingredients'),
       ),
       body: _buildBody(),
     );
