@@ -77,24 +77,26 @@ class IngredientsScreen extends StatelessWidget {
   }
 
   Widget _buildBody() {
-    if (recognizedLabels.isEmpty) {
-      return RecognitionErrorLabel();
-    }
-
-    if (foundNonVegan.isEmpty && foundL10nNonVegan.isEmpty) {
-      return ReallyVeganLabel();
-    }
-
     if (foundNonVegan.isNotEmpty) {
       return FoundNonVeganList(
         foundNonVegan: foundNonVegan,
       );
     }
 
-    return L10nFoundNonVeganList(
-      foundL10nNonVegan: foundL10nNonVegan,
-      l10n: l10ns[l10nIndex],
-    );
+    if (foundL10nNonVegan.isNotEmpty) {
+      return L10nFoundNonVeganList(
+        foundL10nNonVegan: foundL10nNonVegan,
+        l10n: l10ns[l10nIndex],
+      );
+    }
+
+    if (foundNonVegan.isEmpty && foundL10nNonVegan.isEmpty) {
+      return ReallyVeganLabel();
+    }
+
+    if (recognizedLabels.isEmpty) {
+      return RecognitionErrorLabel();
+    }
   }
 }
 

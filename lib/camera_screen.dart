@@ -10,54 +10,194 @@ import 'package:path_provider/path_provider.dart';
 class CameraScreen extends StatefulWidget {
   final List<CameraDescription> cameras;
 
-  CameraScreen(this.cameras);
+  CameraScreen({this.cameras});
 
   @override
-  _CameraScreenState createState() {
-    return _CameraScreenState(cameras);
+  CameraScreenState createState() {
+    return CameraScreenState(cameras: cameras);
   }
 }
 
 void logError(String code, String message) =>
     print('Error: $code\nError Message: $message');
 
-class _CameraScreenState extends State<CameraScreen> {
+class CameraScreenState extends State<CameraScreen> {
   final List<CameraDescription> cameras;
-  bool isProcessing = false;
-  CameraController controller;
-  String imagePath;
-  FirebaseVisionTextDetector detector = FirebaseVisionTextDetector.instance;
+  final FirebaseVisionTextDetector _detector = FirebaseVisionTextDetector.instance;
+  CameraController _controller;
+  bool _isProcessing = false;
+  String _imagePath;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  _CameraScreenState(this.cameras) {
+  CameraScreenState({this.cameras}) {
     _selectCamera();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
-      body: _bodyWidget(),
-    );
+        key: _scaffoldKey,
+        body: Stack(children: <Widget>[
+          Column(children: <Widget>[
+            Expanded(child: _cameraOrImageWidget()),
+            ControlsPanel(
+              controller: _controller,
+              imagePath: _imagePath,
+              onTakePicturePressed: _takePicture,
+              onCheckIngredientsPressed: _checkIngredients,
+              onRetakePicturePressed: _disposePicture,
+            ),
+          ]),
+          LoadingIndicator(isLoading: _isProcessing,),
+        ]));
   }
 
-  Widget _bodyWidget() {
-    var content = <Widget>[
-      Column(children: <Widget>[
-        Expanded(child: _cameraOrImageWidget()),
-        _captureControlRowWidget()
-      ])
-    ];
+  Widget _cameraOrImageWidget() {
+    if (_imagePath != null) {
+      return _takenPicturePreview();
+    } else {
+      return _cameraPreviewWidget();
+    }
+  }
 
-    if (isProcessing) {
-      content.add(_loadingIndicatorWidget());
+  /// Display the preview from the camera (or a message if the preview is not available).
+  Widget _cameraPreviewWidget() {
+    if (_controller == null || !_controller.value.isInitialized) {
+      return const Text(
+        'Wait for camera',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 24.0,
+          fontWeight: FontWeight.w900,
+        ),
+      );
+    } else {
+      return AspectRatio(
+        aspectRatio: _controller.value.aspectRatio,
+        child: CameraPreview(_controller),
+      );
+    }
+  }
+
+  Widget _takenPicturePreview() {
+    return Image.file(File(_imagePath), fit: BoxFit.fill);
+  }
+
+  void _disposePicture() {
+    setState(() {
+      _imagePath = null;
+    });
+  }
+
+  void _checkIngredients() async {
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      var labels = await _detector.detectFromPath(_imagePath);
+      Navigator.of(context).push(MaterialPageRoute(
+          builder: (context) => IngredientsScreen(recognizedLabels: labels)));
+    } catch (e) {
+      print('Error: Error Message: $e');
+      _showInSnackBar("Failed to detect text!");
+    }
+    setState(() {
+      _isProcessing = false;
+    });
+  }
+
+  String _timestamp() => DateTime.now().millisecondsSinceEpoch.toString();
+
+  void _showInSnackBar(String message) {
+    _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _selectCamera() async {
+    final cameraDescription =
+        cameras.firstWhere((c) => c.lensDirection == CameraLensDirection.back);
+
+    if (cameraDescription == null) {
+      _showInSnackBar('No back camera detected!');
+      return;
     }
 
-    return Stack(children: content);
+    if (_controller != null) {
+      await _controller.dispose();
+    }
+    _controller = CameraController(cameraDescription, ResolutionPreset.high);
+
+    // If the controller is updated then update the UI.
+    _controller.addListener(() {
+      if (mounted) setState(() {});
+      if (_controller.value.hasError) {
+        _showInSnackBar('Camera error ${_controller.value.errorDescription}');
+      }
+    });
+
+    try {
+      await _controller.initialize();
+    } on CameraException catch (e) {
+      _showCameraException(e);
+    }
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
-  Widget _loadingIndicatorWidget() {
+  void _takePicture() {
+    _takePictureAndSave().then((String filePath) {
+      if (mounted) {
+        setState(() {
+          _imagePath = filePath;
+        });
+      }
+    });
+  }
+
+  Future<String> _takePictureAndSave() async {
+    if (!_controller.value.isInitialized) {
+      _showInSnackBar('Error: select a camera first.');
+      return null;
+    }
+    final Directory extDir = await getApplicationDocumentsDirectory();
+    final String dirPath = '${extDir.path}/Pictures/flutter_test';
+    await Directory(dirPath).create(recursive: true);
+    final String filePath = '$dirPath/${_timestamp()}.jpg';
+
+    if (_controller.value.isTakingPicture) {
+      // A capture is already pending, do nothing.
+      return null;
+    }
+
+    try {
+      await _controller.takePicture(filePath);
+    } on CameraException catch (e) {
+      _showCameraException(e);
+      return null;
+    }
+    return filePath;
+  }
+
+  void _showCameraException(CameraException e) {
+    logError(e.code, e.description);
+    _showInSnackBar('Error: ${e.code}\n${e.description}');
+  }
+}
+
+class LoadingIndicator extends StatelessWidget {
+  final bool isLoading;
+
+  const LoadingIndicator({Key key, this.isLoading}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isLoading) {
+      return Container();
+    }
+
     return Stack(
       children: [
         Opacity(
@@ -70,46 +210,33 @@ class _CameraScreenState extends State<CameraScreen> {
       ],
     );
   }
+}
 
-  Widget _cameraOrImageWidget() {
-    if (imagePath != null) {
-      return _takenPicturePreview();
-    } else {
-      return _cameraPreviewWidget();
-    }
-  }
+class ControlsPanel extends StatelessWidget {
+  final CameraController controller;
+  final String imagePath;
+  final Function onTakePicturePressed;
+  final Function onRetakePicturePressed;
+  final Function onCheckIngredientsPressed;
 
-  /// Display the preview from the camera (or a message if the preview is not available).
-  Widget _cameraPreviewWidget() {
-    if (controller == null || !controller.value.isInitialized) {
-      return const Text(
-        'Wait for camera',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 24.0,
-          fontWeight: FontWeight.w900,
-        ),
-      );
-    } else {
-      return AspectRatio(
-        aspectRatio: controller.value.aspectRatio,
-        child: CameraPreview(controller),
-      );
-    }
-  }
+  const ControlsPanel(
+      {Key key,
+      this.controller,
+      this.imagePath,
+      this.onTakePicturePressed,
+      this.onRetakePicturePressed,
+      this.onCheckIngredientsPressed})
+      : super(key: key);
 
-  Widget _takenPicturePreview() {
-    return Image.file(File(imagePath), fit: BoxFit.fill);
-  }
-
-  Widget _captureControlRowWidget() {
+  @override
+  Widget build(BuildContext context) {
     var controls = <Widget>[];
     if (imagePath == null) {
       controls.add(IconButton(
         icon: const Icon(Icons.camera_alt),
         color: Colors.blue,
         onPressed: controller != null && controller.value.isInitialized
-            ? onTakePictureButtonPressed
+            ? onTakePicturePressed
             : null,
       ));
     } else {
@@ -121,7 +248,7 @@ class _CameraScreenState extends State<CameraScreen> {
         IconButton(
             icon: const Icon(Icons.search),
             color: Colors.green,
-            onPressed: onCheckPressed)
+            onPressed: onCheckIngredientsPressed)
       ]);
     }
     return Row(
@@ -129,107 +256,5 @@ class _CameraScreenState extends State<CameraScreen> {
       mainAxisSize: MainAxisSize.max,
       children: controls,
     );
-  }
-
-  void onRetakePicturePressed() {
-    setState(() {
-      imagePath = null;
-    });
-  }
-
-  void onCheckPressed() async {
-    setState(() {
-      isProcessing = true;
-    });
-
-    try {
-      var labels = await detector.detectFromPath(imagePath);
-      Navigator.of(context).push(MaterialPageRoute(
-          builder: (context) => IngredientsScreen(recognizedLabels: labels)));
-    } catch (e) {
-      print('Error: Error Message: $e');
-      showInSnackBar("Failed to detect text!");
-    }
-    setState(() {
-      isProcessing = false;
-    });
-  }
-
-  String timestamp() => DateTime.now().millisecondsSinceEpoch.toString();
-
-  void showInSnackBar(String message) {
-    _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  void _selectCamera() async {
-    final cameraDescription =
-        cameras.firstWhere((c) => c.lensDirection == CameraLensDirection.back);
-
-    if (cameraDescription == null) {
-      showInSnackBar('No back camera detected!');
-      return;
-    }
-
-    if (controller != null) {
-      await controller.dispose();
-    }
-    controller = CameraController(cameraDescription, ResolutionPreset.high);
-
-    // If the controller is updated then update the UI.
-    controller.addListener(() {
-      if (mounted) setState(() {});
-      if (controller.value.hasError) {
-        showInSnackBar('Camera error ${controller.value.errorDescription}');
-      }
-    });
-
-    try {
-      await controller.initialize();
-    } on CameraException catch (e) {
-      _showCameraException(e);
-    }
-
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void onTakePictureButtonPressed() {
-    takePicture().then((String filePath) {
-      if (mounted) {
-        setState(() {
-          imagePath = filePath;
-        });
-      }
-    });
-  }
-
-  Future<String> takePicture() async {
-    if (!controller.value.isInitialized) {
-      showInSnackBar('Error: select a camera first.');
-      return null;
-    }
-    final Directory extDir = await getApplicationDocumentsDirectory();
-    final String dirPath = '${extDir.path}/Pictures/flutter_test';
-    await Directory(dirPath).create(recursive: true);
-    final String filePath = '$dirPath/${timestamp()}.jpg';
-
-    if (controller.value.isTakingPicture) {
-      // A capture is already pending, do nothing.
-      return null;
-    }
-
-    try {
-      await controller.takePicture(filePath);
-    } on CameraException catch (e) {
-      _showCameraException(e);
-      return null;
-    }
-    return filePath;
-  }
-
-  void _showCameraException(CameraException e) {
-    logError(e.code, e.description);
-    showInSnackBar('Error: ${e.code}\n${e.description}');
   }
 }
