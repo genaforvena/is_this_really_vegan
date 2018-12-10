@@ -144,8 +144,8 @@ class _CameraScreenState extends State<CameraScreen> {
 
     try {
       var labels = await detector.detectFromPath(imagePath);
-      Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => IngredientsScreen(labels)));
+      Navigator.of(context).push(MaterialPageRoute(
+          builder: (context) => IngredientsScreen(recognizedLabels: labels)));
     } catch (e) {
       print('Error: Error Message: $e');
       showInSnackBar("Failed to detect text!");
