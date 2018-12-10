@@ -81,17 +81,17 @@ class IngredientsScreen extends StatelessWidget {
       return RecognitionErrorLabel();
     }
 
-    if (foundNonVegan.isNotEmpty &&
-        foundNonVegan.length > foundL10nNonVegan.length) {
-      return FoundNonVeganList(
-        foundNonVegan: foundNonVegan,
-      );
-    }
-
-    if (foundL10nNonVegan.isNotEmpty) {
+    if (foundL10nNonVegan.isNotEmpty &&
+        foundL10nNonVegan.length > foundNonVegan.length) {
       return L10nFoundNonVeganList(
         foundL10nNonVegan: foundL10nNonVegan,
         l10n: l10ns[l10nIndex],
+      );
+    }
+
+    if (foundNonVegan.isNotEmpty) {
+      return FoundNonVeganList(
+        foundNonVegan: foundNonVegan,
       );
     }
 
