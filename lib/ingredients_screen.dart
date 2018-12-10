@@ -77,6 +77,10 @@ class IngredientsScreen extends StatelessWidget {
   }
 
   Widget _buildBody() {
+    if (recognizedLabels.isEmpty) {
+      return RecognitionErrorLabel();
+    }
+
     if (foundNonVegan.isNotEmpty) {
       return FoundNonVeganList(
         foundNonVegan: foundNonVegan,
@@ -94,9 +98,7 @@ class IngredientsScreen extends StatelessWidget {
       return ReallyVeganLabel();
     }
 
-    if (recognizedLabels.isEmpty) {
-      return RecognitionErrorLabel();
-    }
+    return RecognitionErrorLabel();
   }
 }
 

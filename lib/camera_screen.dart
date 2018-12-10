@@ -61,7 +61,6 @@ class CameraScreenState extends State<CameraScreen> {
     }
   }
 
-  /// Display the preview from the camera (or a message if the preview is not available).
   Widget _cameraPreviewWidget() {
     if (_controller == null || !_controller.value.isInitialized) {
       return const Text(
