@@ -187,7 +187,14 @@ class CameraPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (imagePath != null) {
-      return Image.file(File(imagePath), fit: BoxFit.fill);
+      return Container(
+          child: Container(),
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: FileImage(File(imagePath)),
+              fit: BoxFit.fill,
+            ),
+          ));
     }
 
     if (cameraController == null || !cameraController.value.isInitialized) {
