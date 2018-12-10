@@ -14,7 +14,7 @@ class CameraScreen extends StatefulWidget {
 
   @override
   CameraScreenState createState() {
-    return CameraScreenState(cameras: cameras);
+    return CameraScreenState(cameras);
   }
 }
 
@@ -23,15 +23,29 @@ void logError(String code, String message) =>
 
 class CameraScreenState extends State<CameraScreen> {
   final List<CameraDescription> cameras;
-  final FirebaseVisionTextDetector _detector = FirebaseVisionTextDetector.instance;
+  final FirebaseVisionTextDetector _detector =
+      FirebaseVisionTextDetector.instance;
   CameraController _controller;
   bool _isProcessing = false;
   String _imagePath;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  CameraScreenState({this.cameras}) {
-    _selectCamera();
+  CameraScreenState(this.cameras);
+
+  @override
+  void initState() {
+    super.initState();
+    _initBackCamera();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    if (_controller != null) {
+      _controller.dispose();
+      _controller = null;
+    }
   }
 
   @override
@@ -40,7 +54,12 @@ class CameraScreenState extends State<CameraScreen> {
         key: _scaffoldKey,
         body: Stack(children: <Widget>[
           Column(children: <Widget>[
-            Expanded(child: _cameraOrImageWidget()),
+            Expanded(
+              child: CameraPanel(
+                cameraController: _controller,
+                imagePath: _imagePath,
+              ),
+            ),
             ControlsPanel(
               controller: _controller,
               imagePath: _imagePath,
@@ -49,38 +68,10 @@ class CameraScreenState extends State<CameraScreen> {
               onRetakePicturePressed: _disposePicture,
             ),
           ]),
-          LoadingIndicator(isLoading: _isProcessing,),
+          LoadingIndicator(
+            isLoading: _isProcessing,
+          ),
         ]));
-  }
-
-  Widget _cameraOrImageWidget() {
-    if (_imagePath != null) {
-      return _takenPicturePreview();
-    } else {
-      return _cameraPreviewWidget();
-    }
-  }
-
-  Widget _cameraPreviewWidget() {
-    if (_controller == null || !_controller.value.isInitialized) {
-      return const Text(
-        'Wait for camera',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 24.0,
-          fontWeight: FontWeight.w900,
-        ),
-      );
-    } else {
-      return AspectRatio(
-        aspectRatio: _controller.value.aspectRatio,
-        child: CameraPreview(_controller),
-      );
-    }
-  }
-
-  Widget _takenPicturePreview() {
-    return Image.file(File(_imagePath), fit: BoxFit.fill);
   }
 
   void _disposePicture() {
@@ -113,7 +104,7 @@ class CameraScreenState extends State<CameraScreen> {
     _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _selectCamera() async {
+  void _initBackCamera() async {
     final cameraDescription =
         cameras.firstWhere((c) => c.lensDirection == CameraLensDirection.back);
 
@@ -183,6 +174,34 @@ class CameraScreenState extends State<CameraScreen> {
   void _showCameraException(CameraException e) {
     logError(e.code, e.description);
     _showInSnackBar('Error: ${e.code}\n${e.description}');
+  }
+}
+
+class CameraPanel extends StatelessWidget {
+  final CameraController cameraController;
+  final String imagePath;
+
+  const CameraPanel({Key key, this.cameraController, this.imagePath})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    if (imagePath != null) {
+      return Image.file(File(imagePath), fit: BoxFit.fill);
+    }
+
+    if (cameraController == null || !cameraController.value.isInitialized) {
+      return const Text(
+        'Wait for camera',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 24.0,
+          fontWeight: FontWeight.w900,
+        ),
+      );
+    } else {
+      return CameraPreview(cameraController);
+    }
   }
 }
 
