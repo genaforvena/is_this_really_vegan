@@ -28,17 +28,17 @@ class IngredientsScreen extends StatelessWidget {
   factory IngredientsScreen({List<VisionText> recognizedLabels}) {
     final ingredients = _rawIngredientsString(recognizedLabels);
     final foundNonVegan = _matchesInString(nonVeganIngredients, ingredients);
-    List<String> foundL10nNonVegan;
-    int l10nIndex;
-    if (foundNonVegan.isEmpty) {
-      for (var i = 0; i < 3; i++) {
-        foundL10nNonVegan = _matchesInString(l10ns[i], ingredients);
-        if (foundL10nNonVegan.isNotEmpty) {
-          l10nIndex = i;
-          break;
-        }
+    List<String> foundL10nNonVegan = [];
+    int l10nIndex = 0;
+
+    for (var i = 0; i < 3; i++) {
+      foundL10nNonVegan = _matchesInString(l10ns[i], ingredients);
+      if (foundL10nNonVegan.isNotEmpty) {
+        l10nIndex = i;
+        break;
       }
     }
+
     return IngredientsScreen._(
       recognizedLabels: recognizedLabels,
       foundNonVegan: foundNonVegan,
@@ -81,7 +81,8 @@ class IngredientsScreen extends StatelessWidget {
       return RecognitionErrorLabel();
     }
 
-    if (foundNonVegan.isNotEmpty) {
+    if (foundNonVegan.isNotEmpty &&
+        foundNonVegan.length > foundL10nNonVegan.length) {
       return FoundNonVeganList(
         foundNonVegan: foundNonVegan,
       );
