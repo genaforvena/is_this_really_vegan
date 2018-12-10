@@ -50,28 +50,39 @@ class CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        key: _scaffoldKey,
-        body: Stack(children: <Widget>[
-          Column(children: <Widget>[
-            Expanded(
-              child: CameraPanel(
-                cameraController: _controller,
-                imagePath: _imagePath,
+    return WillPopScope(
+        child: Scaffold(
+            key: _scaffoldKey,
+            body: Stack(children: <Widget>[
+              Column(children: <Widget>[
+                Expanded(
+                  child: CameraPanel(
+                    cameraController: _controller,
+                    imagePath: _imagePath,
+                  ),
+                ),
+                ControlsPanel(
+                  controller: _controller,
+                  imagePath: _imagePath,
+                  onTakePicturePressed: _takePicture,
+                  onCheckIngredientsPressed: _checkIngredients,
+                  onRetakePicturePressed: _disposePicture,
+                ),
+              ]),
+              LoadingIndicator(
+                isLoading: _isProcessing,
               ),
-            ),
-            ControlsPanel(
-              controller: _controller,
-              imagePath: _imagePath,
-              onTakePicturePressed: _takePicture,
-              onCheckIngredientsPressed: _checkIngredients,
-              onRetakePicturePressed: _disposePicture,
-            ),
-          ]),
-          LoadingIndicator(
-            isLoading: _isProcessing,
-          ),
-        ]));
+            ])),
+        onWillPop: _handleBackPress);
+  }
+
+  Future<bool> _handleBackPress() {
+    if (_imagePath == null) {
+      return Future(() => true);
+    }
+
+    _disposePicture();
+    return Future(() => false);
   }
 
   void _disposePicture() {
