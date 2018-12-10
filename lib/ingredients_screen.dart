@@ -27,6 +27,7 @@ class IngredientsScreen extends StatelessWidget {
 
   factory IngredientsScreen({List<VisionText> recognizedLabels}) {
     final ingredients = _rawIngredientsString(recognizedLabels);
+    print("ingredients $ingredients");
     final foundNonVegan = _matchesInString(nonVeganIngredients, ingredients);
     List<String> foundL10nNonVegan = [];
     int l10nIndex = 0;
@@ -51,7 +52,7 @@ class IngredientsScreen extends StatelessWidget {
     final rawIngredients = labels
         .map((visionText) => visionText.text)
         .join(" ")
-        .replaceAll(RegExp(r"[^\s\w]"), " ")
+        .replaceAll(RegExp(r"[,.;:-:/@#?!&$]+\ *"), " ")
         .replaceAll("\n", " ")
         .toLowerCase();
     final withSpacesRaw = " $rawIngredients ";
